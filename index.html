@@ -198,17 +198,24 @@
                 </select>
             </div>
 
-            <div class="relative w-full aspect-video bg-black rounded border border-emerald-500/30 overflow-hidden group">
-                <video id="streamVideo" class="w-full h-full object-cover transition-all duration-300" autoplay loop muted playsinline></video>
+            <div class="relative w-full aspect-video bg-black rounded border border-emerald-500/30 overflow-hidden group cursor-pointer" onclick="forcePlayVideo()">
+                <!-- FIXED DIRECT ATTRIBUTES FOR CHROME AUTOPLAY -->
+                <video id="streamVideo" class="w-full h-full object-cover transition-all duration-300" autoplay loop muted playsinline preload="auto"></video>
 
                 <div class="scanline absolute inset-0 pointer-events-none"></div>
                 
-                <div class="absolute top-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 backdrop-blur pointer-events-none flex items-center gap-1">
+                <!-- PLAY INITIALIZER OVERLAY IF BLOCKED BY CHROME -->
+                <div id="playPrompt" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center gap-2 z-20 transition-opacity duration-300">
+                    <i class="fa-solid fa-circle-play text-4xl text-emerald-400 animate-bounce"></i>
+                    <span class="text-xs text-emerald-300 font-bold tracking-widest">[ CLICK TO INITIALIZE FEED ]</span>
+                </div>
+
+                <div class="absolute top-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 backdrop-blur pointer-events-none flex items-center gap-1 z-10">
                     <span class="inline-block w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
                     <span id="nodeLabel">NODE: JK-THAMRIN-01</span>
                 </div>
 
-                <div id="targetLocationLabel" class="absolute bottom-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-300 backdrop-blur pointer-events-none">
+                <div id="targetLocationLabel" class="absolute bottom-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-300 backdrop-blur pointer-events-none z-10">
                     TARGET: THAMRIN JUNCTION [JAKARTA, ID]
                 </div>
             </div>
@@ -358,17 +365,28 @@
         };
 
         const video = document.getElementById('streamVideo');
+        const playPrompt = document.getElementById('playPrompt');
+
+        function forcePlayVideo() {
+            video.muted = true;
+            video.play().then(() => {
+                playPrompt.classList.add('opacity-0', 'pointer-events-none');
+            }).catch(err => console.log("User interaction required"));
+        }
 
         function loadStream(url) {
             video.pause();
             video.src = url;
-            video.load(); // FIX UNTUK CHROME AUTOPLAY PIPELINE
             video.muted = true;
+            video.load();
             
             const playPromise = video.play();
             if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Autoplay retry fallback");
+                playPromise.then(() => {
+                    playPrompt.classList.add('opacity-0', 'pointer-events-none');
+                }).catch(error => {
+                    console.log("Autoplay retry fallback active");
+                    playPrompt.classList.remove('opacity-0', 'pointer-events-none');
                 });
             }
         }
@@ -387,7 +405,15 @@
             logAction('FEED_SWITCH', `Attached video pipeline to node [${key.toUpperCase()}]`);
         }
 
+        // Initialize Default Feed
         loadStream(feeds.jakarta.stream);
+
+        // Global click handler to auto-initialize playback on any user click
+        document.addEventListener('click', () => {
+            if (video.paused) {
+                forcePlayVideo();
+            }
+        }, { once: true });
 
         let nvActive = false;
         function toggleNightVision() {
