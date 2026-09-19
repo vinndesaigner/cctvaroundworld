@@ -9,8 +9,6 @@
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- HLS.js for Streaming -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     
@@ -21,7 +19,6 @@
             font-family: 'Share Tech Mono', monospace;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -38,12 +35,10 @@
             background-color: #020617 !important;
         }
 
-        /* Night Vision IR Filter */
         .night-vision-active {
             filter: sepia(100%) hue-rotate(90deg) saturate(400%) contrast(150%) brightness(80%);
         }
 
-        /* Scanline FX */
         .scanline {
             background: linear-gradient(
                 to bottom,
@@ -72,14 +67,12 @@
             </div>
         </div>
 
-        <!-- CENTER SEARCH BAR -->
         <div class="flex items-center gap-2 bg-slate-950 border border-emerald-500/30 px-2 py-1 rounded w-1/3">
             <i class="fa-solid fa-crosshairs text-emerald-600 text-xs"></i>
             <input type="text" id="searchInput" placeholder="SEARCH CALLSIGN / COORDS / TARGET NODE..." class="bg-transparent border-none outline-none text-xs text-emerald-300 placeholder-emerald-700 w-full">
             <button onclick="handleSearch()" class="text-xs bg-emerald-600/30 hover:bg-emerald-500/50 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 transition">LOCATE</button>
         </div>
 
-        <!-- RIGHT METRICS -->
         <div class="flex items-center gap-4 text-xs">
             <div class="text-right">
                 <div class="text-[10px] text-emerald-600">LATENCY</div>
@@ -99,7 +92,7 @@
     <!-- MAIN DASHBOARD CONTENT GRID -->
     <div class="grid grid-cols-12 gap-2 flex-1 min-h-[580px]">
 
-        <!-- LEFT PANEL: ENTITY LAYERS -->
+        <!-- LEFT PANEL -->
         <div class="col-span-2 bg-slate-900/60 border border-emerald-500/20 rounded p-2 flex flex-col gap-2">
             <div class="flex justify-between items-center border-b border-emerald-500/20 pb-1">
                 <span class="text-xs font-bold tracking-wider flex items-center gap-1">
@@ -158,7 +151,6 @@
                 </label>
             </div>
 
-            <!-- TEAM CREDIT PANEL -->
             <div class="mt-auto bg-slate-950/80 p-2 rounded border border-emerald-500/20 text-[10px] flex flex-col gap-1">
                 <div class="text-emerald-500 font-bold border-b border-emerald-900 pb-0.5">OPERATORS</div>
                 <div class="flex justify-between">
@@ -172,11 +164,9 @@
             </div>
         </div>
 
-        <!-- CENTER PANEL: TACTICAL LEAFLET MAP -->
+        <!-- CENTER PANEL MAP -->
         <div class="col-span-6 bg-slate-900/60 border border-emerald-500/20 rounded relative overflow-hidden flex flex-col">
             <div id="map" class="w-full h-full z-0"></div>
-            
-            <!-- MAP OVERLAY CONTROLS -->
             <div class="absolute top-2 right-2 z-10 flex gap-1">
                 <button onclick="recenterMap()" class="bg-slate-950/80 hover:bg-emerald-900/50 text-emerald-400 border border-emerald-500/30 text-xs px-2 py-1 rounded flex items-center gap-1 backdrop-blur">
                     <i class="fa-solid fa-location-crosshairs"></i> RECENTER MAP
@@ -184,7 +174,7 @@
             </div>
         </div>
 
-        <!-- RIGHT PANEL: CITY LIVE STREAMS & VIDEO PLAYER -->
+        <!-- RIGHT PANEL VIDEO -->
         <div class="col-span-4 bg-slate-900/60 border border-emerald-500/20 rounded p-2 flex flex-col gap-2">
             <div class="flex justify-between items-center border-b border-emerald-500/20 pb-1">
                 <span class="text-xs font-bold tracking-wider flex items-center gap-1">
@@ -193,7 +183,6 @@
                 <span class="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-800 font-bold">STREAM ACTIVE</span>
             </div>
 
-            <!-- STREAM SOURCE SELECTOR -->
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] text-emerald-600">SELECT SENSOR NODE:</label>
                 <select id="feedSelector" onchange="changeFeedSource(this.value)" class="bg-slate-950 border border-emerald-500/30 text-xs text-emerald-300 p-1.5 rounded outline-none cursor-pointer">
@@ -209,11 +198,9 @@
                 </select>
             </div>
 
-            <!-- DIRECT HTML5 VIDEO PLAYER -->
             <div class="relative w-full aspect-video bg-black rounded border border-emerald-500/30 overflow-hidden group">
                 <video id="streamVideo" class="w-full h-full object-cover transition-all duration-300" autoplay loop muted playsinline></video>
 
-                <!-- HUD OVERLAY ON VIDEO -->
                 <div class="scanline absolute inset-0 pointer-events-none"></div>
                 
                 <div class="absolute top-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 backdrop-blur pointer-events-none flex items-center gap-1">
@@ -226,7 +213,6 @@
                 </div>
             </div>
 
-            <!-- CONTROLS & HUD TOGGLES -->
             <div class="grid grid-cols-2 gap-2 mt-1">
                 <button onclick="toggleNightVision()" class="bg-emerald-950/60 hover:bg-emerald-800/50 text-emerald-300 border border-emerald-500/40 text-xs py-1.5 rounded flex items-center justify-center gap-1.5 transition">
                     <i class="fa-solid fa-moon"></i> <span id="nvStatus">IR VISION: OFF</span>
@@ -236,7 +222,6 @@
                 </button>
             </div>
 
-            <!-- TELEMETRY / DETAILED METRICS -->
             <div class="bg-slate-950/80 border border-emerald-500/20 p-2 rounded flex-1 flex flex-col gap-1.5 text-[11px]">
                 <div class="text-emerald-500 font-bold border-b border-emerald-900 pb-0.5 text-[10px]">REAL-TIME METRICS</div>
                 <div class="flex justify-between">
@@ -259,7 +244,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM PANEL: FORENSIC LOG TERMINAL -->
+    <!-- BOTTOM TERMINAL -->
     <div class="bg-slate-900/80 border border-emerald-500/20 rounded p-2 h-28 flex flex-col text-xs font-mono">
         <div class="flex justify-between items-center border-b border-emerald-500/20 pb-1 mb-1 text-[10px] text-emerald-600">
             <span>>_ FORENSIC LOGS & OPERATIONAL TERMINAL</span>
@@ -272,9 +257,7 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- 1. CLOCK & LATENCY SIMULATOR ---
         function updateClock() {
             const now = new Date();
             document.getElementById('utcClock').innerText = now.toUTCString().split(' ')[4] + ' UTC';
@@ -287,7 +270,6 @@
             document.getElementById('fpsVal').innerText = Math.floor(Math.random() * 3 + 58);
         }, 2000);
 
-        // --- 2. LEAFLET ESRI DARK MAP INIT ---
         const map = L.map('map', { zoomControl: false }).setView([-6.1754, 106.8272], 12);
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
@@ -327,7 +309,6 @@
             logAction('MAP_RECENTER', 'Reset view to global tactical overview');
         }
 
-        // --- 3. 9 DISTINCT CORS-FRIENDLY GOOGLE CLOUD STREAMS ---
         const feeds = {
             jakarta: {
                 stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
@@ -379,12 +360,17 @@
         const video = document.getElementById('streamVideo');
 
         function loadStream(url) {
+            video.pause();
             video.src = url;
+            video.load(); // FIX UNTUK CHROME AUTOPLAY PIPELINE
             video.muted = true;
-            video.play().catch(e => {
-                console.log("Autoplay forced retry");
-                document.addEventListener('click', () => video.play(), { once: true });
-            });
+            
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Autoplay retry fallback");
+                });
+            }
         }
 
         function changeFeedSource(key) {
@@ -401,10 +387,8 @@
             logAction('FEED_SWITCH', `Attached video pipeline to node [${key.toUpperCase()}]`);
         }
 
-        // Init Default Stream (Jakarta)
         loadStream(feeds.jakarta.stream);
 
-        // --- 4. NIGHT VISION IR FILTER TOGGLE ---
         let nvActive = false;
         function toggleNightVision() {
             nvActive = !nvActive;
@@ -421,7 +405,6 @@
             }
         }
 
-        // --- 5. FORENSIC FRAME CAPTURE ---
         function captureVideoFrame() {
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth || 1280;
@@ -438,7 +421,6 @@
             logAction('SNAPSHOT_CAPTURED', `Frame buffer exported to file: KINTELLANGELIAN_FRAME_${currentFeedKey.toUpperCase()}.png`);
         }
 
-        // --- 6. TERMINAL LOGGING SYSTEM ---
         function logAction(tag, message) {
             const logBox = document.getElementById('terminalLog');
             const now = new Date().toUTCString().split(' ')[4];
