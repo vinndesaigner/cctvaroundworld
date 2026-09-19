@@ -197,9 +197,9 @@
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] text-emerald-600">SELECT SENSOR NODE:</label>
                 <select id="feedSelector" onchange="changeFeedSource(this.value)" class="bg-slate-950 border border-emerald-500/30 text-xs text-emerald-300 p-1.5 rounded outline-none cursor-pointer">
-                    <option value="samara">🇷🇺 Node 03: Volga Embankment (Samara, RU)</option>
                     <option value="jakarta">🇮🇩 Node 01: Thamrin Junction (Jakarta, ID)</option>
                     <option value="surabaya">🇮🇩 Node 02: Tunjungan Corridor (Surabaya, ID)</option>
+                    <option value="samara">🇷🇺 Node 03: Volga Embankment (Samara, RU)</option>
                     <option value="tokyo">🇯🇵 Node 04: Shibuya Crossing (Tokyo, JP)</option>
                     <option value="london">🇬🇧 Node 05: Piccadilly Circus (London, UK)</option>
                     <option value="paris">🇫🇷 Node 06: Seine / Eiffel Node (Paris, FR)</option>
@@ -209,7 +209,7 @@
                 </select>
             </div>
 
-            <!-- DIRECT HTML5 VIDEO PLAYER (NO CORS RESTRICTION) -->
+            <!-- DIRECT HTML5 VIDEO PLAYER -->
             <div class="relative w-full aspect-video bg-black rounded border border-emerald-500/30 overflow-hidden group">
                 <video id="streamVideo" class="w-full h-full object-cover transition-all duration-300" autoplay loop muted playsinline></video>
 
@@ -218,11 +218,11 @@
                 
                 <div class="absolute top-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 backdrop-blur pointer-events-none flex items-center gap-1">
                     <span class="inline-block w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                    <span id="nodeLabel">NODE: SMR-VOLGA-03</span>
+                    <span id="nodeLabel">NODE: JK-THAMRIN-01</span>
                 </div>
 
                 <div id="targetLocationLabel" class="absolute bottom-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-300 backdrop-blur pointer-events-none">
-                    TARGET: VOLGA EMBANKMENT [SAMARA, RU]
+                    TARGET: THAMRIN JUNCTION [JAKARTA, ID]
                 </div>
             </div>
 
@@ -249,7 +249,7 @@
                 </div>
                 <div class="flex justify-between">
                     <span class="text-slate-400">GEO COORDINATES:</span>
-                    <span id="targetCoords" class="text-emerald-300 font-mono">53.1959° N, 50.1002° E</span>
+                    <span id="targetCoords" class="text-emerald-300 font-mono">6.1754° S, 106.8272° E</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-slate-400">GEOINT VALIDATION:</span>
@@ -268,7 +268,7 @@
         <div id="terminalLog" class="flex-1 overflow-y-auto space-y-1 text-[11px]">
             <div>[00:00:01 UTC] <span class="text-emerald-400">[SYSTEM_INIT]</span> Tactical Command Dashboard loaded successfully.</div>
             <div>[00:00:02 UTC] <span class="text-sky-400">[MAP_READY]</span> Esri World Dark Gray Canvas initialized with 9 global nodes.</div>
-            <div>[00:00:03 UTC] <span class="text-emerald-400">[FEED_ATTACHED]</span> Connected to sensor node [SAMARA].</div>
+            <div>[00:00:03 UTC] <span class="text-emerald-400">[FEED_ATTACHED]</span> Connected to sensor node [JAKARTA].</div>
         </div>
     </div>
 
@@ -288,7 +288,7 @@
         }, 2000);
 
         // --- 2. LEAFLET ESRI DARK MAP INIT ---
-        const map = L.map('map', { zoomControl: false }).setView([53.1959, 50.1002], 12);
+        const map = L.map('map', { zoomControl: false }).setView([-6.1754, 106.8272], 12);
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
@@ -296,9 +296,9 @@
         }).addTo(map);
 
         const cityNodes = [
-            { name: "Volga Embankment (Samara, RU)", lat: 53.1959, lng: 50.1002, feed: "samara" },
             { name: "Thamrin Junction (Jakarta, ID)", lat: -6.1754, lng: 106.8272, feed: "jakarta" },
             { name: "Tunjungan Corridor (Surabaya, ID)", lat: -7.2575, lng: 112.7521, feed: "surabaya" },
+            { name: "Volga Embankment (Samara, RU)", lat: 53.1959, lng: 50.1002, feed: "samara" },
             { name: "Shibuya Crossing (Tokyo, JP)", lat: 35.6595, lng: 139.7004, feed: "tokyo" },
             { name: "Piccadilly Circus (London, UK)", lat: 51.5074, lng: -0.1278, feed: "london" },
             { name: "Seine / Eiffel Node (Paris, FR)", lat: 48.8566, lng: 2.3522, feed: "paris" },
@@ -327,13 +327,8 @@
             logAction('MAP_RECENTER', 'Reset view to global tactical overview');
         }
 
-        // --- 3. ULTRA STABLE VIDEO PIPELINE (FALLBACK AUTOMATED) ---
+        // --- 3. 9 DISTINCT CORS-FRIENDLY GOOGLE CLOUD STREAMS ---
         const feeds = {
-            samara: {
-                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-                coords: "53.1959° N, 50.1002° E", lat: 53.1959, lng: 50.1002,
-                label: "TARGET: VOLGA EMBANKMENT [SAMARA, RU]", node: "NODE: SMR-VOLGA-03"
-            },
             jakarta: {
                 stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
                 coords: "6.1754° S, 106.8272° E", lat: -6.1754, lng: 106.8272,
@@ -343,6 +338,11 @@
                 stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
                 coords: "7.2575° S, 112.7521° E", lat: -7.2575, lng: 112.7521,
                 label: "TARGET: TUNJUNGAN CORRIDOR [SURABAYA, ID]", node: "NODE: SBY-TUNJUNGAN-02"
+            },
+            samara: {
+                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+                coords: "53.1959° N, 50.1002° E", lat: 53.1959, lng: 50.1002,
+                label: "TARGET: VOLGA EMBANKMENT [SAMARA, RU]", node: "NODE: SMR-VOLGA-03"
             },
             tokyo: {
                 stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
@@ -355,12 +355,12 @@
                 label: "TARGET: PICCADILLY CIRCUS [LONDON, UK]", node: "NODE: LDN-PICCADILLY-05"
             },
             paris: {
-                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackComplexity.mp4",
+                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
                 coords: "48.8566° N, 2.3522° E", lat: 48.8566, lng: 2.3522,
                 label: "TARGET: SEINE / EIFFEL NODE [PARIS, FR]", node: "NODE: PRS-SEINE-06"
             },
             munich: {
-                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackComplexity.mp4",
                 coords: "48.1351° N, 11.5820° E", lat: 48.1351, lng: 11.5820,
                 label: "TARGET: MARIENPLATZ SQUARE [MUNICH, DE]", node: "NODE: MUC-MARIEN-07"
             },
@@ -370,7 +370,7 @@
                 label: "TARGET: PORT VELL / LA RAMBLA [BARCELONA, ES]", node: "NODE: BCN-PORT-08"
             },
             madrid: {
-                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+                stream: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
                 coords: "40.4168° N, 3.7038° W", lat: 40.4168, lng: -3.7038,
                 label: "TARGET: PUERTA DEL SOL [MADRID, ES]", node: "NODE: MAD-PUERTA-09"
             }
@@ -401,8 +401,8 @@
             logAction('FEED_SWITCH', `Attached video pipeline to node [${key.toUpperCase()}]`);
         }
 
-        // Init Default Stream (Samara)
-        loadStream(feeds.samara.stream);
+        // Init Default Stream (Jakarta)
+        loadStream(feeds.jakarta.stream);
 
         // --- 4. NIGHT VISION IR FILTER TOGGLE ---
         let nvActive = false;
