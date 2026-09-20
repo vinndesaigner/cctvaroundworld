@@ -1,443 +1,275 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KINTELLANGELIAN OSINT COMMAND CENTER</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REALTIME CCTV WORLD</title>
+  <link rel="icon" type="image/jpg" href="foto.jpg">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    :root {
+      --primary: #00ff41;
+      --bg: #070707;
+      --panel: #0d0d0d;
+      --border: 1px solid #1a331a;
+      --alert: #ff003c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: #ccc;
+      font-family: 'Consolas', 'Courier New', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 11px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      border-bottom: var(--border);
+      background: var(--panel);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .title { color: var(--primary); font-weight: bold; }
+    .sys-info { color: #00e5ff; }
+    .blink { animation: blink 1.2s infinite; }
+    @keyframes blink { 50% { opacity: 0.2; } }
+
+    .main-content {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 35px);
+    }
+
+    .cctv-matrix {
+      flex: 3.5;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 4px;
+      padding: 4px;
+      background: #000;
+    }
+
+    .cctv-card {
+      position: relative;
+      background: #000;
+      border: 1px solid #182218;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cctv-card:hover { border-color: var(--primary); }
+
+    .feed-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 20px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(0,0,0,0));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 6px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .feed-tag { color: #fff; font-size: 9px; letter-spacing: 0.5px; }
+    .feed-tag span { color: var(--primary); font-weight: bold; }
+    .rec-badge { color: var(--alert); font-size: 9px; font-weight: bold; }
+
+    /* Video Player Iframe YouTube */
+    iframe {
+      width: 140%;             
+      height: 140%;            
+      margin-top: -12%;        
+      margin-left: -20%;       
+      border: none;
+      filter: contrast(110%) brightness(95%);
+      pointer-events: none;    
+    }
+    /* Efek Scanline Garis CCTV */
+    .scanlines {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.4) 0px,
+        rgba(0, 0, 0, 0.4) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      z-index: 4;
+      pointer-events: none;
+    }
     
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-        
-        * {
-            font-family: 'Share Tech Mono', monospace;
-        }
+    /* Tampilan Offline / URL Kosong */
+    .offline-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, #000 0px, #000 2px, #0a0a0a 2px, #0a0a0a 4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--alert);
+      font-weight: bold;
+      z-index: 2;
+      font-size: 11px;
+    }
 
-        ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #020617;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #059669;
-            border-radius: 2px;
-        }
+    .sidebar {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      border-left: var(--border);
+      background: var(--panel);
+      padding: 4px;
+    }
 
-        .leaflet-container {
-            background-color: #020617 !important;
-        }
+    .sidebar-title {
+      color: var(--primary);
+      padding: 4px 6px;
+      font-weight: bold;
+      border-bottom: var(--border);
+      margin-bottom: 4px;
+    }
 
-        .night-vision-active {
-            filter: sepia(100%) hue-rotate(90deg) saturate(400%) contrast(150%) brightness(80%);
-        }
+    #map {
+      flex: 1;
+      border: var(--border);
+      background: #000;
+    }
 
-        .scanline {
-            background: linear-gradient(
-                to bottom,
-                rgba(255,255,255,0),
-                rgba(255,255,255,0) 50%,
-                rgba(0, 255, 128, 0.08) 50%,
-                rgba(0, 255, 128, 0.08)
-            );
-            background-size: 100% 4px;
-        }
-    </style>
+    .leaflet-tile-pane { filter: brightness(0.65) contrast(1.3) hue-rotate(80deg) saturate(180%); }
+
+    .logs-panel {
+      height: 130px;
+      margin-top: 4px;
+      border: var(--border);
+      padding: 6px;
+      overflow-y: auto;
+      font-size: 10px;
+      background: #050505;
+      color: #888;
+      line-height: 1.4;
+    }
+    .logs-panel div.ok { color: var(--primary); }
+    .logs-panel div.err { color: var(--alert); }
+  </style>
 </head>
-<body class="bg-slate-950 text-emerald-400 min-h-screen flex flex-col p-2 gap-2 select-none overflow-x-hidden">
+<body>
 
-    <!-- HEADER / TOP NAV -->
-    <header class="bg-slate-900/80 border border-emerald-500/30 rounded p-2 flex justify-between items-center shadow-lg shadow-emerald-950/20">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-emerald-500/10 border border-emerald-400 flex items-center justify-center rounded animate-pulse">
-                <i class="fa-solid fa-eye text-emerald-400"></i>
-            </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-wider text-emerald-300 flex items-center gap-2">
-                    KINTELLANGELIAN <span class="text-xs bg-emerald-900/50 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30">COMMAND CENTER v4.0</span>
-                </h1>
-                <p class="text-[10px] text-emerald-600 tracking-widest">MULTI-DOMAIN TACTICAL INTELLIGENCE & REAL-TIME GLOBAL VIDEO PIPELINE</p>
-            </div>
-        </div>
+  <header>
+    <div class="title">GLOBAL CCTV MATRIX</div>
+    <div class="sys-info">STREAM: <span class="blink">ONLINE</span></div>
+    <div id="live-clock">00:00:00 WIB</div>
+  </header>
 
-        <div class="flex items-center gap-2 bg-slate-950 border border-emerald-500/30 px-2 py-1 rounded w-1/3">
-            <i class="fa-solid fa-crosshairs text-emerald-600 text-xs"></i>
-            <input type="text" id="searchInput" placeholder="SEARCH CALLSIGN / COORDS / TARGET NODE..." class="bg-transparent border-none outline-none text-xs text-emerald-300 placeholder-emerald-700 w-full">
-            <button onclick="handleSearch()" class="text-xs bg-emerald-600/30 hover:bg-emerald-500/50 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 transition">LOCATE</button>
-        </div>
+  <div class="main-content">
+    <div class="cctv-matrix" id="matrix"></div>
 
-        <div class="flex items-center gap-4 text-xs">
-            <div class="text-right">
-                <div class="text-[10px] text-emerald-600">LATENCY</div>
-                <div class="font-bold text-emerald-400" id="latencyVal">8ms</div>
-            </div>
-            <div class="text-right">
-                <div class="text-[10px] text-emerald-600">FPS</div>
-                <div class="font-bold text-emerald-400" id="fpsVal">60</div>
-            </div>
-            <div class="text-right">
-                <div class="text-[10px] text-emerald-600">UTC TIME</div>
-                <div class="font-bold text-emerald-300" id="utcClock">00:00:00 UTC</div>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN DASHBOARD CONTENT GRID -->
-    <div class="grid grid-cols-12 gap-2 flex-1 min-h-[580px]">
-
-        <!-- LEFT PANEL -->
-        <div class="col-span-2 bg-slate-900/60 border border-emerald-500/20 rounded p-2 flex flex-col gap-2">
-            <div class="flex justify-between items-center border-b border-emerald-500/20 pb-1">
-                <span class="text-xs font-bold tracking-wider flex items-center gap-1">
-                    <i class="fa-solid fa-layer-group text-emerald-500"></i> ENTITY LAYERS
-                </span>
-                <span class="text-[10px] bg-emerald-950 text-emerald-400 px-1 rounded border border-emerald-800">842 ACTIVE</span>
-            </div>
-
-            <div class="flex flex-col gap-1.5 text-xs">
-                <label class="flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-emerald-500/10 cursor-pointer hover:border-emerald-500/30">
-                    <span class="flex items-center gap-2">
-                        <input type="checkbox" checked class="accent-emerald-500">
-                        <i class="fa-solid fa-plane text-sky-400"></i> Civil Aircraft
-                    </span>
-                    <span class="text-[10px] text-sky-400 font-bold">412</span>
-                </label>
-
-                <label class="flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-emerald-500/10 cursor-pointer hover:border-emerald-500/30">
-                    <span class="flex items-center gap-2">
-                        <input type="checkbox" checked class="accent-emerald-500">
-                        <i class="fa-solid fa-jet-fighter text-rose-400"></i> Military Aircraft
-                    </span>
-                    <span class="text-[10px] text-rose-400 font-bold">285</span>
-                </label>
-
-                <label class="flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-emerald-500/10 cursor-pointer hover:border-emerald-500/30">
-                    <span class="flex items-center gap-2">
-                        <input type="checkbox" checked class="accent-emerald-500">
-                        <i class="fa-solid fa-helicopter text-amber-400"></i> Helicopters
-                    </span>
-                    <span class="text-[10px] text-amber-400 font-bold">64</span>
-                </label>
-
-                <label class="flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-emerald-500/10 cursor-pointer hover:border-emerald-500/30">
-                    <span class="flex items-center gap-2">
-                        <input type="checkbox" checked class="accent-emerald-500">
-                        <i class="fa-solid fa-ship text-blue-400"></i> Maritime Vessels
-                    </span>
-                    <span class="text-[10px] text-blue-400 font-bold">42</span>
-                </label>
-
-                <label class="flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-emerald-500/10 cursor-pointer hover:border-emerald-500/30">
-                    <span class="flex items-center gap-2">
-                        <input type="checkbox" checked class="accent-emerald-500">
-                        <i class="fa-solid fa-satellite text-purple-400"></i> Satellites (LEO)
-                    </span>
-                    <span class="text-[10px] text-purple-400 font-bold">18</span>
-                </label>
-
-                <label class="flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-emerald-500/10 cursor-pointer hover:border-emerald-500/30">
-                    <span class="flex items-center gap-2">
-                        <input type="checkbox" checked class="accent-emerald-500">
-                        <i class="fa-solid fa-video text-emerald-400"></i> CCTV & Feeds
-                    </span>
-                    <span class="text-[10px] text-emerald-400 font-bold">9</span>
-                </label>
-            </div>
-
-            <div class="mt-auto bg-slate-950/80 p-2 rounded border border-emerald-500/20 text-[10px] flex flex-col gap-1">
-                <div class="text-emerald-500 font-bold border-b border-emerald-900 pb-0.5">OPERATORS</div>
-                <div class="flex justify-between">
-                    <span class="text-slate-400">TEAM LEAD:</span>
-                    <span class="text-emerald-300 font-bold">KINTELLANGELIAN</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-400">GLOBAL RANK:</span>
-                    <span class="text-amber-400 font-bold">#1 TRACE LABS</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- CENTER PANEL MAP -->
-        <div class="col-span-6 bg-slate-900/60 border border-emerald-500/20 rounded relative overflow-hidden flex flex-col">
-            <div id="map" class="w-full h-full z-0"></div>
-            <div class="absolute top-2 right-2 z-10 flex gap-1">
-                <button onclick="recenterMap()" class="bg-slate-950/80 hover:bg-emerald-900/50 text-emerald-400 border border-emerald-500/30 text-xs px-2 py-1 rounded flex items-center gap-1 backdrop-blur">
-                    <i class="fa-solid fa-location-crosshairs"></i> RECENTER MAP
-                </button>
-            </div>
-        </div>
-
-        <!-- RIGHT PANEL VIDEO -->
-        <div class="col-span-4 bg-slate-900/60 border border-emerald-500/20 rounded p-2 flex flex-col gap-2">
-            <div class="flex justify-between items-center border-b border-emerald-500/20 pb-1">
-                <span class="text-xs font-bold tracking-wider flex items-center gap-1">
-                    <i class="fa-solid fa-video text-rose-500 animate-pulse"></i> LIVE VIDEO STREAM
-                </span>
-                <span class="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-800 font-bold">STREAM ACTIVE</span>
-            </div>
-
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] text-emerald-600">SELECT SENSOR NODE:</label>
-                <select id="feedSelector" onchange="changeFeedSource(this.value)" class="bg-slate-950 border border-emerald-500/30 text-xs text-emerald-300 p-1.5 rounded outline-none cursor-pointer">
-                    <option value="jakarta">🇮🇩 Node 01: Thamrin Junction (Jakarta, ID)</option>
-                    <option value="surabaya">🇮🇩 Node 02: Tunjungan Corridor (Surabaya, ID)</option>
-                    <option value="samara">🇷🇺 Node 03: Volga Embankment (Samara, RU)</option>
-                    <option value="tokyo">🇯🇵 Node 04: Shibuya Crossing (Tokyo, JP)</option>
-                    <option value="london">🇬🇧 Node 05: Piccadilly Circus (London, UK)</option>
-                    <option value="paris">🇫🇷 Node 06: Seine / Eiffel Node (Paris, FR)</option>
-                    <option value="munich">🇩🇪 Node 07: Marienplatz Square (Munich, DE)</option>
-                    <option value="barcelona">🇪🇸 Node 08: Port Vell / La Rambla (Barcelona, ES)</option>
-                    <option value="madrid">🇪🇸 Node 09: Puerta del Sol (Madrid, ES)</option>
-                </select>
-            </div>
-
-            <div class="relative w-full aspect-video bg-black rounded border border-emerald-500/30 overflow-hidden group">
-                <video id="streamVideo" class="w-full h-full object-cover" autoplay loop muted playsinline preload="auto"></video>
-
-                <div class="scanline absolute inset-0 pointer-events-none"></div>
-
-                <div class="absolute top-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 backdrop-blur pointer-events-none flex items-center gap-1 z-10">
-                    <span class="inline-block w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                    <span id="nodeLabel">NODE: JK-THAMRIN-01</span>
-                </div>
-
-                <div id="targetLocationLabel" class="absolute bottom-2 left-2 text-[10px] bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-300 backdrop-blur pointer-events-none z-10">
-                    TARGET: THAMRIN JUNCTION [JAKARTA, ID]
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 mt-1">
-                <button onclick="toggleNightVision()" class="bg-emerald-950/60 hover:bg-emerald-800/50 text-emerald-300 border border-emerald-500/40 text-xs py-1.5 rounded flex items-center justify-center gap-1.5 transition">
-                    <i class="fa-solid fa-moon"></i> <span id="nvStatus">IR VISION: OFF</span>
-                </button>
-                <button onclick="captureVideoFrame()" class="bg-sky-950/60 hover:bg-sky-800/50 text-sky-300 border border-sky-500/40 text-xs py-1.5 rounded flex items-center justify-center gap-1.5 transition">
-                    <i class="fa-solid fa-camera"></i> CAPTURE FRAME
-                </button>
-            </div>
-
-            <div class="bg-slate-950/80 border border-emerald-500/20 p-2 rounded flex-1 flex flex-col gap-1.5 text-[11px]">
-                <div class="text-emerald-500 font-bold border-b border-emerald-900 pb-0.5 text-[10px]">REAL-TIME METRICS</div>
-                <div class="flex justify-between">
-                    <span class="text-slate-400">STREAM PROTOCOL:</span>
-                    <span class="text-emerald-400 font-mono">DIRECT MP4 / HLS PIPELINE</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-400">FRAME RATE:</span>
-                    <span class="text-emerald-400 font-mono">60 FPS [STABLE]</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-400">GEO COORDINATES:</span>
-                    <span id="targetCoords" class="text-emerald-300 font-mono">6.1754° S, 106.8272° E</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-slate-400">GEOINT VALIDATION:</span>
-                    <span class="text-emerald-400 font-bold">100% CONFIRMED</span>
-                </div>
-            </div>
-        </div>
+    <div class="sidebar">
+      <div class="sidebar-title">[+] GIS SURVEILLANCE RADAR</div>
+      <div id="map"></div>
+      <div class="logs-panel" id="logs">
+        <div class="ok">> SYSTEM REINITIALIZED, HYBRID FEED MODE</div>
+        <div class="ok">> HOOKING REALTIME GLOBAL NODES...</div>
+      </div>
     </div>
+  </div>
 
-    <!-- BOTTOM TERMINAL -->
-    <div class="bg-slate-900/80 border border-emerald-500/20 rounded p-2 h-28 flex flex-col text-xs font-mono">
-        <div class="flex justify-between items-center border-b border-emerald-500/20 pb-1 mb-1 text-[10px] text-emerald-600">
-            <span>>_ FORENSIC LOGS & OPERATIONAL TERMINAL</span>
-            <button onclick="clearTerminal()" class="hover:text-emerald-400">CLEAR LOGS</button>
-        </div>
-        <div id="terminalLog" class="flex-1 overflow-y-auto space-y-1 text-[11px]">
-            <div>[00:00:01 UTC] <span class="text-emerald-400">[SYSTEM_INIT]</span> Tactical Command Dashboard loaded successfully.</div>
-            <div>[00:00:02 UTC] <span class="text-sky-400">[MAP_READY]</span> Esri World Dark Gray Canvas initialized with 9 global nodes.</div>
-            <div>[00:00:03 UTC] <span class="text-emerald-400">[FEED_ATTACHED]</span> Connected to sensor node [JAKARTA].</div>
-        </div>
-    </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script>
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('utcClock').innerText = now.toUTCString().split(' ')[4] + ' UTC';
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+  <script>
+    // ==========================================================
+    // MASUKIN ID YOUTUBE DI SINI (CONTOH: "IFzpwTnv23w")
+    // Kalau belum nemu link-nya, biarin kosong ("") biar muncul [ SIGNAL LOST ]
+    // ==========================================================
+    const cctvNodes = [
+      { id: "STK", name: "STOCKHOLM", lat: 59.3346, lng: 18.0672, yt: "agY6ZaM1G_o" },
+      { id: "CAN", name: "CANMORE", lat: 51.0890, lng: -115.3596, yt: "_0wPODlF9wU" },
+      { id: "SPB", name: "ST. PETERSBURG", lat: 59.9350, lng: 30.3250, yt: "w_Dg2vC0tUE" },
+      
+      { id: "DUB", name: "DUBLIN", lat: 53.3498, lng: -6.2603, yt: "3nyPER2kzqk" },
+      { id: "SEO", name: "SEOUL", lat: 37.5665, lng: 126.9780, yt: "C3hW1VrwmNc" },
+      { id: "VEN", name: "VENICE", lat: 45.4365, lng: 12.3300, yt: "Kmf_wiTFuXY" },
+      
+      // Dua kamera di bawah ini contoh yg sudah diisi live stream YouTube Shibuya & Times Square:
+      { id: "TKO", name: "TOKYO", lat: 35.6594, lng: 139.7005, yt: "gFRtAAmiFbE" },
+      { id: "NYC", name: "NEW YORK", lat: 40.7580, lng: -73.9855, yt: "JQ_jwk_7OVE" },
+      
+      { id: "LON", name: "LONDON", lat: 51.5055, lng: -0.0754, yt: "zMCea32gpmg" },
+      { id: "PHI", name: "PHILADELPHIA", lat: 39.9526, lng: -75.1652, yt: "9mMnqO1UuIU" },
+      { id: "BER", name: "BERLIN", lat: 48.1371, lng: 11.5754, yt: "8djINznvJDs" },
+      { id: "MEL", name: "MELBOURNE", lat: -37.8136, lng: 144.9631, yt: "gEbrHdFRgpQ" }
+    ];
 
-        setInterval(() => {
-            document.getElementById('latencyVal').innerText = Math.floor(Math.random() * 5 + 7) + 'ms';
-            document.getElementById('fpsVal').innerText = Math.floor(Math.random() * 3 + 58);
-        }, 2000);
+    const matrix = document.getElementById('matrix');
+    const logs = document.getElementById('logs');
 
-        const map = L.map('map', { zoomControl: false }).setView([-6.1754, 106.8272], 12);
+    cctvNodes.forEach((node, i) => {
+      const card = document.createElement('div');
+      card.className = 'cctv-card';
+      
+      if (node.yt) {
+        const embedUrl = `https://www.youtube-nocookie.com/embed/${node.yt}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playsinline=1&rel=0`;
+        card.innerHTML = `
+          <div class="feed-header">
+            <div class="feed-tag"><span>CAM-${String(i+1).padStart(2, '0')}</span> ${node.name}</div>
+            <div class="rec-badge"><span class="blink">●</span> REC</div>
+          </div>
+          <iframe src="${embedUrl}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+          <div class="scanlines"></div>
+        `;
+        addLog(`> LINK ESTABLISHED: ${node.id} (${node.name.split('//')[0].trim()})`, 'ok');
+      } else {
+        card.innerHTML = `
+          <div class="feed-header">
+            <div class="feed-tag"><span>CAM-${String(i+1).padStart(2, '0')}</span> // ${node.name}</div>
+            <div class="rec-badge"><span class="blink">●</span> REC</div>
+          </div>
+          <div class="offline-overlay">[ SIGNAL LOST / NO URL ]</div>
+          <div class="scanlines"></div>
+        `;
+      }
 
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-            maxZoom: 16
-        }).addTo(map);
+      matrix.appendChild(card);
+    });
 
-        const cityNodes = [
-            { name: "Thamrin Junction (Jakarta, ID)", lat: -6.1754, lng: 106.8272, feed: "jakarta" },
-            { name: "Tunjungan Corridor (Surabaya, ID)", lat: -7.2575, lng: 112.7521, feed: "surabaya" },
-            { name: "Volga Embankment (Samara, RU)", lat: 53.1959, lng: 50.1002, feed: "samara" },
-            { name: "Shibuya Crossing (Tokyo, JP)", lat: 35.6595, lng: 139.7004, feed: "tokyo" },
-            { name: "Piccadilly Circus (London, UK)", lat: 51.5074, lng: -0.1278, feed: "london" },
-            { name: "Seine / Eiffel Node (Paris, FR)", lat: 48.8566, lng: 2.3522, feed: "paris" },
-            { name: "Marienplatz Square (Munich, DE)", lat: 48.1351, lng: 11.5820, feed: "munich" },
-            { name: "Port Vell (Barcelona, ES)", lat: 41.3851, lng: 2.1734, feed: "barcelona" },
-            { name: "Puerta del Sol (Madrid, ES)", lat: 40.4168, lng: -3.7038, feed: "madrid" }
-        ];
+    // PETA SATELIT ESRI
+    const map = L.map('map', { center: [20, 10], zoom: 1, zoomControl: false, attributionControl: false });
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(map);
 
-        cityNodes.forEach(node => {
-            const marker = L.circleMarker([node.lat, node.lng], {
-                color: '#10b981',
-                fillColor: '#059669',
-                fillOpacity: 0.8,
-                radius: 7
-            }).addTo(map);
+    const pin = L.divIcon({
+      html: '<div style="width:7px;height:7px;background:#00ff41;border-radius:50%;box-shadow:0 0 8px #00ff41;"></div>',
+      iconSize: [7, 7]
+    });
 
-            marker.bindPopup(`<b style="color:#020617;">${node.name}</b>`);
-            marker.on('click', () => {
-                document.getElementById('feedSelector').value = node.feed;
-                changeFeedSource(node.feed);
-            });
-        });
+    cctvNodes.forEach(node => {
+      L.marker([node.lat, node.lng], { icon: pin }).addTo(map);
+    });
 
-        function recenterMap() {
-            map.setView([20.0, 0.0], 2);
-            logAction('MAP_RECENTER', 'Reset view to global tactical overview');
-        }
+    function addLog(msg, type) {
+      logs.innerHTML += `<div class="${type}">${msg}</div>`;
+      logs.scrollTop = logs.scrollHeight;
+    }
 
-        // 100% CORS-FRIENDLY & HIGH RELIABILITY VIDEO SOURCES
-        const feeds = {
-            jakarta: {
-                stream: "https://vjs.zencdn.net/v/oceans.mp4",
-                coords: "6.1754° S, 106.8272° E", lat: -6.1754, lng: 106.8272,
-                label: "TARGET: THAMRIN JUNCTION [JAKARTA, ID]", node: "NODE: JK-THAMRIN-01"
-            },
-            surabaya: {
-                stream: "https://media.w3.org/2010/05/sintel/trailer.mp4",
-                coords: "7.2575° S, 112.7521° E", lat: -7.2575, lng: 112.7521,
-                label: "TARGET: TUNJUNGAN CORRIDOR [SURABAYA, ID]", node: "NODE: SBY-TUNJUNGAN-02"
-            },
-            samara: {
-                stream: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-                coords: "53.1959° N, 50.1002° E", lat: 53.1959, lng: 50.1002,
-                label: "TARGET: VOLGA EMBANKMENT [SAMARA, RU]", node: "NODE: SMR-VOLGA-03"
-            },
-            tokyo: {
-                stream: "https://www.w3schools.com/html/mov_bbb.mp4",
-                coords: "35.6595° N, 139.7004° E", lat: 35.6595, lng: 139.7004,
-                label: "TARGET: SHIBUYA CROSSING [TOKYO, JP]", node: "NODE: TKY-SHIBUYA-04"
-            },
-            london: {
-                stream: "https://vjs.zencdn.net/v/oceans.mp4",
-                coords: "51.5074° N, 0.1278° W", lat: 51.5074, lng: -0.1278,
-                label: "TARGET: PICCADILLY CIRCUS [LONDON, UK]", node: "NODE: LDN-PICCADILLY-05"
-            },
-            paris: {
-                stream: "https://media.w3.org/2010/05/sintel/trailer.mp4",
-                coords: "48.8566° N, 2.3522° E", lat: 48.8566, lng: 2.3522,
-                label: "TARGET: SEINE / EIFFEL NODE [PARIS, FR]", node: "NODE: PRS-SEINE-06"
-            },
-            munich: {
-                stream: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-                coords: "48.1351° N, 11.5820° E", lat: 48.1351, lng: 11.5820,
-                label: "TARGET: MARIENPLATZ SQUARE [MUNICH, DE]", node: "NODE: MUC-MARIEN-07"
-            },
-            barcelona: {
-                stream: "https://www.w3schools.com/html/mov_bbb.mp4",
-                coords: "41.3851° N, 2.1734° E", lat: 41.3851, lng: 2.1734,
-                label: "TARGET: PORT VELL / LA RAMBLA [BARCELONA, ES]", node: "NODE: BCN-PORT-08"
-            },
-            madrid: {
-                stream: "https://vjs.zencdn.net/v/oceans.mp4",
-                coords: "40.4168° N, 3.7038° W", lat: 40.4168, lng: -3.7038,
-                label: "TARGET: PUERTA DEL SOL [MADRID, ES]", node: "NODE: MAD-PUERTA-09"
-            }
-        };
-
-        const video = document.getElementById('streamVideo');
-
-        function loadStream(url) {
-            video.src = url;
-            video.muted = true;
-            video.play().catch(() => {
-                // Ensure muted playback bypassing Chrome policy
-                video.muted = true;
-                video.play();
-            });
-        }
-
-        function changeFeedSource(key) {
-            const feed = feeds[key];
-            if (!feed) return;
-
-            loadStream(feed.stream);
-
-            document.getElementById('targetCoords').innerText = feed.coords;
-            document.getElementById('targetLocationLabel').innerText = feed.label;
-            document.getElementById('nodeLabel').innerText = feed.node;
-
-            map.flyTo([feed.lat, feed.lng], 13, { duration: 1.5 });
-            logAction('FEED_SWITCH', `Attached video pipeline to node [${key.toUpperCase()}]`);
-        }
-
-        loadStream(feeds.jakarta.stream);
-
-        let nvActive = false;
-        function toggleNightVision() {
-            nvActive = !nvActive;
-            const statusText = document.getElementById('nvStatus');
-
-            if (nvActive) {
-                video.classList.add('night-vision-active');
-                statusText.innerText = "IR VISION: ON";
-                logAction('FILTER_APPLIED', 'Tactical IR Green Thermal Filter active');
-            } else {
-                video.classList.remove('night-vision-active');
-                statusText.innerText = "IR VISION: OFF";
-                logAction('FILTER_REMOVED', 'Returned sensor pipeline to normal spectrum');
-            }
-        }
-
-        function captureVideoFrame() {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 1280;
-            canvas.height = video.videoHeight || 720;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            const image = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            const currentFeedKey = document.getElementById('feedSelector').value;
-            link.download = `KINTELLANGELIAN_FRAME_${currentFeedKey.toUpperCase()}.png`;
-            link.href = image;
-            link.click();
-            logAction('SNAPSHOT_CAPTURED', `Frame buffer exported to file: KINTELLANGELIAN_FRAME_${currentFeedKey.toUpperCase()}.png`);
-        }
-
-        function logAction(tag, message) {
-            const logBox = document.getElementById('terminalLog');
-            const now = new Date().toUTCString().split(' ')[4];
-            const div = document.createElement('div');
-            div.innerHTML = `[${now} UTC] <span class="text-emerald-400">[${tag}]</span> ${message}`;
-            logBox.appendChild(div);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        function clearTerminal() {
-            document.getElementById('terminalLog').innerHTML = '';
-        }
-
-        function handleSearch() {
-            const val = document.getElementById('searchInput').value.trim();
-            if (val) {
-                logAction('SEARCH_QUERY', `Searching entity index for: "${val}"`);
-                document.getElementById('searchInput').value = '';
-            }
-        }
-    </script>
+    setInterval(() => {
+      document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('id-ID') + ' WIB';
+    }, 1000);
+  </script>
 </body>
 </html>
