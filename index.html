@@ -168,6 +168,39 @@
     }
     .logs-panel div.ok { color: var(--primary); }
     .logs-panel div.err { color: var(--alert); }
+    .cctv-card {
+      aspect-ratio: 16 / 9;
+    }
+
+    /* RESPONSIVE MOBILE (LAYAR HP) */
+    @media (max-width: 768px) {
+      body {
+        height: auto;
+        overflow-y: auto;
+      }
+
+      .main-content {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .cctv-matrix {
+        grid-template-columns: repeat(1, 1fr);
+        grid-template-rows: none;
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .sidebar {
+        border-left: none;
+        border-top: var(--border);
+        height: 400px;
+      }
+
+      #map {
+        min-height: 220px;
+      }
+    }
   </style>
 </head>
 <body>
