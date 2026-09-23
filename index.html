@@ -60,6 +60,7 @@
       gap: 4px;
       padding: 4px;
       background: #000;
+      overflow-y: auto;
     }
 
     .cctv-card {
@@ -70,6 +71,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      min-height: 140px;
     }
 
     .cctv-card:hover { border-color: var(--primary); }
@@ -77,8 +79,8 @@
     .feed-header {
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 20px;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.85), rgba(0,0,0,0));
+      height: 22px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0));
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -89,6 +91,7 @@
 
     .feed-tag { color: #fff; font-size: 9px; letter-spacing: 0.5px; }
     .feed-tag span { color: var(--primary); font-weight: bold; }
+    .feed-time { color: #00e5ff; font-size: 9px; margin-left: 6px; }
     .rec-badge { color: var(--alert); font-size: 9px; font-weight: bold; }
 
     /* Video Player Iframe YouTube */
@@ -101,6 +104,7 @@
       filter: contrast(110%) brightness(95%);
       pointer-events: none;    
     }
+    
     /* Efek Scanline Garis CCTV */
     .scanlines {
       position: absolute;
@@ -148,15 +152,43 @@
     }
 
     #map {
-      flex: 1;
+      height: 45%;
       border: var(--border);
       background: #000;
     }
 
     .leaflet-tile-pane { filter: brightness(0.65) contrast(1.3) hue-rotate(80deg) saturate(180%); }
 
+    /* Panel Metrik Jaringan */
+    .metrics-panel {
+      border: var(--border);
+      padding: 6px;
+      margin-top: 4px;
+      background: #050505;
+      font-size: 10px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .metric-bar {
+      width: 100%;
+      background: #111;
+      height: 4px;
+      border: 1px solid #1a331a;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    .metric-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 45%;
+      transition: width 0.5s ease;
+    }
+
     .logs-panel {
-      height: 130px;
+      flex: 1;
       margin-top: 4px;
       border: var(--border);
       padding: 6px;
@@ -184,6 +216,25 @@
     <div class="sidebar">
       <div class="sidebar-title">[+] GIS SURVEILLANCE RADAR</div>
       <div id="map"></div>
+
+      <!-- Widget Metrik Jaringan Baru -->
+      <div class="metrics-panel">
+        <div class="metric-row">
+          <span>BANDWIDTH LOAD:</span>
+          <span id="bw-val" style="color:var(--primary)">64.2 KB/s</span>
+        </div>
+        <div class="metric-bar"><div class="metric-fill" id="bw-bar" style="width: 65%;"></div></div>
+        
+        <div class="metric-row">
+          <span>GLOBAL LATENCY:</span>
+          <span style="color:#00e5ff">38ms [OPTIMAL]</span>
+        </div>
+        <div class="metric-row">
+          <span>ACTIVE NODES:</span>
+          <span id="active-count" style="color:var(--primary)">0 / 0</span>
+        </div>
+      </div>
+
       <div class="logs-panel" id="logs">
         <div class="ok">> SYSTEM REINITIALIZED, HYBRID FEED MODE</div>
         <div class="ok">> HOOKING REALTIME GLOBAL NODES...</div>
@@ -194,51 +245,58 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // ==========================================================
-    // MASUKIN ID YOUTUBE DI SINI (CONTOH: "IFzpwTnv23w")
-    // Kalau belum nemu link-nya, biarin kosong ("") biar muncul [ SIGNAL LOST ]
-    // ==========================================================
+    // Tambahkan properti 'tz' (Timezone) untuk indikator waktu masing-masing kota
     const cctvNodes = [
-      { id: "STK", name: "STOCKHOLM", lat: 59.3346, lng: 18.0672, yt: "agY6ZaM1G_o" },
-      { id: "CAN", name: "CANMORE", lat: 51.0890, lng: -115.3596, yt: "_0wPODlF9wU" },
-      { id: "SPB", name: "ST. PETERSBURG", lat: 59.9350, lng: 30.3250, yt: "w_Dg2vC0tUE" },
+      { id: "STK", name: "STOCKHOLM", lat: 59.3346, lng: 18.0672, yt: "agY6ZaM1G_o", tz: "Europe/Stockholm" },
+      { id: "CAN", name: "CANMORE", lat: 51.0890, lng: -115.3596, yt: "_0wPODlF9wU", tz: "America/Edmonton" },
+      { id: "SPB", name: "ST. PETERSBURG", lat: 59.9350, lng: 30.3250, yt: "w_Dg2vC0tUE", tz: "Europe/Moscow" },
       
-      { id: "DUB", name: "DUBLIN", lat: 53.3498, lng: -6.2603, yt: "3nyPER2kzqk" },
-      { id: "SEO", name: "SEOUL", lat: 37.5665, lng: 126.9780, yt: "C3hW1VrwmNc" },
-      { id: "VEN", name: "VENICE", lat: 45.4365, lng: 12.3300, yt: "Kmf_wiTFuXY" },
+      { id: "DUB", name: "DUBLIN", lat: 53.3498, lng: -6.2603, yt: "3nyPER2kzqk", tz: "Europe/Dublin" },
+      { id: "SEO", name: "SEOUL", lat: 37.5665, lng: 126.9780, yt: "C3hW1VrwmNc", tz: "Asia/Seoul" },
+      { id: "VEN", name: "VENICE", lat: 45.4365, lng: 12.3300, yt: "Kmf_wiTFuXY", tz: "Europe/Rome" },
       
-      // Dua kamera di bawah ini contoh yg sudah diisi live stream YouTube Shibuya & Times Square:
-      { id: "TKO", name: "TOKYO", lat: 35.6594, lng: 139.7005, yt: "gFRtAAmiFbE" },
-      { id: "NYC", name: "NEW YORK", lat: 40.7580, lng: -73.9855, yt: "JQ_jwk_7OVE" },
+      { id: "TKO", name: "TOKYO", lat: 35.6594, lng: 139.7005, yt: "gFRtAAmiFbE", tz: "Asia/Tokyo" },
+      { id: "NYC", name: "NEW YORK", lat: 40.7580, lng: -73.9855, yt: "JQ_jwk_7OVE", tz: "America/New_York" },
       
-      { id: "LON", name: "LONDON", lat: 51.5055, lng: -0.0754, yt: "zMCea32gpmg" },
-      { id: "PHI", name: "PHILADELPHIA", lat: 39.9526, lng: -75.1652, yt: "9mMnqO1UuIU" },
-      { id: "BER", name: "BERLIN", lat: 48.1371, lng: 11.5754, yt: "8djINznvJDs" },
-      { id: "MEL", name: "MELBOURNE", lat: -37.8136, lng: 144.9631, yt: "gEbrHdFRgpQ" }
+      { id: "LON", name: "LONDON", lat: 51.5055, lng: -0.0754, yt: "zMCea32gpmg", tz: "Europe/London" },
+      { id: "PHI", name: "PHILADELPHIA", lat: 39.9526, lng: -75.1652, yt: "9mMnqO1UuIU", tz: "America/New_York" },
+      { id: "BER", name: "BERLIN", lat: 48.1371, lng: 11.5754, yt: "8djINznvJDs", tz: "Europe/Berlin" },
+      { id: "MEL", name: "MELBOURNE", lat: -37.8136, lng: 144.9631, yt: "gEbrHdFRgpQ", tz: "Australia/Melbourne" }
+      
+      // CONTOHkalau mau tambah kota baru tinggal copy format di bawah ini:
+      // { id: "AMS", name: "AMSTERDAM", lat: 52.3676, lng: 4.9041, yt: "KODE_YT_DISINI", tz: "Europe/Amsterdam" }
     ];
 
     const matrix = document.getElementById('matrix');
     const logs = document.getElementById('logs');
+    let activeNodesCount = 0;
 
     cctvNodes.forEach((node, i) => {
       const card = document.createElement('div');
       card.className = 'cctv-card';
       
       if (node.yt) {
+        activeNodesCount++;
         const embedUrl = `https://www.youtube-nocookie.com/embed/${node.yt}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playsinline=1&rel=0`;
         card.innerHTML = `
           <div class="feed-header">
-            <div class="feed-tag"><span>CAM-${String(i+1).padStart(2, '0')}</span> ${node.name}</div>
+            <div class="feed-tag">
+              <span>CAM-${String(i+1).padStart(2, '0')}</span> ${node.name}
+              <span class="feed-time" id="time-${node.id}">--:--:--</span>
+            </div>
             <div class="rec-badge"><span class="blink">●</span> REC</div>
           </div>
           <iframe src="${embedUrl}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
           <div class="scanlines"></div>
         `;
-        addLog(`> LINK ESTABLISHED: ${node.id} (${node.name.split('//')[0].trim()})`, 'ok');
+        addLog(`> LINK ESTABLISHED: ${node.id} (${node.name})`, 'ok');
       } else {
         card.innerHTML = `
           <div class="feed-header">
-            <div class="feed-tag"><span>CAM-${String(i+1).padStart(2, '0')}</span> // ${node.name}</div>
+            <div class="feed-tag">
+              <span>CAM-${String(i+1).padStart(2, '0')}</span> // ${node.name}
+              <span class="feed-time" id="time-${node.id}">--:--:--</span>
+            </div>
             <div class="rec-badge"><span class="blink">●</span> REC</div>
           </div>
           <div class="offline-overlay">[ SIGNAL LOST / NO URL ]</div>
@@ -248,6 +306,8 @@
 
       matrix.appendChild(card);
     });
+
+    document.getElementById('active-count').innerText = `${activeNodesCount} / ${cctvNodes.length}`;
 
     // PETA SATELIT ESRI
     const map = L.map('map', { center: [20, 10], zoom: 1, zoomControl: false, attributionControl: false });
@@ -267,8 +327,29 @@
       logs.scrollTop = logs.scrollHeight;
     }
 
+    // Fungsi Update Jam Global & Lokal + Simulasi Fluktuasi Bandwidth
     setInterval(() => {
+      // Jam Utama Header (WIB)
       document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('id-ID') + ' WIB';
+
+      // Jam di setiap kartu CCTV sesuai zona waktu masing-masing kota
+      cctvNodes.forEach(node => {
+        const timeEl = document.getElementById(`time-${node.id}`);
+        if (timeEl && node.tz) {
+          try {
+            const options = { timeZone: node.tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            timeEl.innerText = new Intl.DateTimeFormat('en-GB', options).format(new Date());
+          } catch (e) {
+            // Fallback kalau timezone string error
+          }
+        }
+      });
+
+      // Simulasi fluktuasi bandwidth biar kelihatan hidup
+      const randomBw = (Math.random() * (75 - 55) + 55).toFixed(1);
+      document.getElementById('bw-val').innerText = `${randomBw} KB/s`;
+      document.getElementById('bw-bar').style.width = `${randomBw}%`;
+
     }, 1000);
   </script>
 </body>
